@@ -36,3 +36,13 @@ def get_book_info_by_isbn(isbn: str):
 
 
 
+def get_book_info_by_title(title: str):
+    url = f"https://openlibrary.org/search.json?q={title}"
+    headers = {
+        "User-Agent": "biblioteca/1.0 (brvvv6@gmail.com)"
+    }
+    response = requests.get(url, headers=headers)
+    livro = response.json()
+    if livro["docs"]:
+        return livro["docs"]
+

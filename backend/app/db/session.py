@@ -8,9 +8,10 @@ from app.db.database import engine
 
 from app.models.books import Books
 
-from app.services.book_catalog import get_book_isbn, get_book_info_by_isbn
+from app.services.book_catalog import get_book_isbn, get_book_info_by_isbn, get_book_info_by_title
 
 import json
+import uuid
 
 DB_PATH = Path(__file__).resolve().parent / "books.db"
 Base.metadata.create_all(bind=engine)
@@ -36,3 +37,60 @@ def add_livro_to_db(book_name: str):
                 )
         session.add(new_book)
         session.commit()
+
+
+
+def get_all_books():
+    with Session(engine) as session:
+        livros = session.execute(select(Books)).fetchall()
+        livros = [book[0] for book in livros]
+        return livros
+
+
+
+def get_book_id_by_title(title: str):
+    with Session(engine) as session:
+        livro = session.execute(select(Books).where(Books.title == title)).scalar_one_or_none()
+        if livro:
+            return str(livro.id)
+        return None
+
+
+
+def get_book_by_id(book_id: str):
+    if book_id is None:
+        return None
+    book_id = uuid.UUID(book_id)
+    with Session(engine) as session:
+        livro = session.execute(select(Books).where(Books.id == book_id)).scalar_one_or_none()
+        return livro
+
+
+def update_book(book_id: str, updated_data: dict):
+    if book_id is None:
+        return None
+    book_id = uuid.UUID(book_id)
+    with Session(engine) as session:
+        livro = session.execute(select(Books).where(Books.id == book_id)).scalar_one_or_none()
+        if livro:
+            for key, value in updated_data.items():
+                setattr(livro, key, value)
+            livro.updated_at = func.now()
+            session.commit()
+            return livro
+        return None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
