@@ -7,6 +7,7 @@ from pathlib import Path
 from app.db.database import engine
 
 from app.models.books import Books
+from app.models.reading_notes import ReadingNotes
 
 from app.services.book_catalog import get_book_isbn, get_book_info_by_isbn, get_book_info_by_title
 
@@ -81,9 +82,43 @@ def update_book(book_id: str, updated_data: dict):
         return None
 
 
+#----------------------------------------------------------------NOTAS------------------------------------------------------------
+
+
+def add_reading_note_to_db(book_id: str, chapter: str, page: int, note_type: str, content: str):
+    book_id = uuid.UUID(book_id)
+    with Session(engine) as session:
+        new_note = ReadingNotes(
+            book_id=book_id,
+            chapter=chapter,
+            page=page,
+            note_type=note_type,
+            content=content,
+            created_at=func.now(),
+            updated_at=func.now(),
+        )
+        session.add(new_note)
+        session.commit()
 
 
 
+def get_all_reading_notes():
+    with Session(engine) as session:
+        notas = session.execute(select(ReadingNotes)).fetchall()
+        notas = [note[0] for note in notas]
+        return notas
+
+
+
+def delete_reading_note_by_id(note_id: str):
+    note_id = uuid.UUID(note_id)
+    with Session(engine) as session:
+        note = session.execute(select(ReadingNotes).where(ReadingNotes.id == note_id)).scalar_one_or_none()
+        if note:
+            session.delete(note)
+            session.commit()
+            return True
+        return False
 
 
 
