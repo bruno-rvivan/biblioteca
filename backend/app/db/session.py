@@ -110,6 +110,22 @@ def get_all_reading_notes():
 
 
 
+def get_reading_note_by_id(note_id: str):
+    note_id = uuid.UUID(note_id)
+    with Session(engine) as session:
+        nota = session.execute(select(ReadingNotes).where(ReadingNotes.id == note_id)).scalar_one_or_none()
+        return nota
+
+
+
+def get_reading_notes_by_book_id(book_id: str):
+    book_id = uuid.UUID(book_id)
+    with Session(engine) as session:
+        notas = session.execute(select(ReadingNotes).where(ReadingNotes.book_id == book_id)).fetchall()
+        notas = [note[0] for note in notas]
+        return notas
+
+
 def delete_reading_note_by_id(note_id: str):
     note_id = uuid.UUID(note_id)
     with Session(engine) as session:
@@ -119,7 +135,6 @@ def delete_reading_note_by_id(note_id: str):
             session.commit()
             return True
         return False
-
 
 
 
