@@ -1,6 +1,7 @@
 
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 from app.db.base import Base
 from pathlib import Path
@@ -48,6 +49,20 @@ def get_all_books():
         return livros
 
 
+def create_book(book_data: dict):
+    timestamp = datetime.now(timezone.utc).isoformat()
+    with Session(engine) as session:
+        book = Books(
+            **book_data,
+            created_at=timestamp,
+            updated_at=timestamp,
+        )
+        session.add(book)
+        session.commit()
+        session.refresh(book)
+        return book
+
+
 
 def get_book_id_by_title(title: str):
     with Session(engine) as session:
@@ -85,8 +100,9 @@ def update_book(book_id: str, updated_data: dict):
 #----------------------------------------------------------------NOTAS------------------------------------------------------------
 
 
-def add_reading_note_to_db(book_id: str, chapter: str, page: int, note_type: str, content: str):
-    book_id = uuid.UUID(book_id)
+def add_reading_note_to_db(book_id: uuid.UUID | str, chapter: str, page: int | None, note_type: str, content: str):
+    if isinstance(book_id, str):
+        book_id = uuid.UUID(book_id)
     with Session(engine) as session:
         new_note = ReadingNotes(
             book_id=book_id,
@@ -99,6 +115,8 @@ def add_reading_note_to_db(book_id: str, chapter: str, page: int, note_type: str
         )
         session.add(new_note)
         session.commit()
+        session.refresh(new_note)
+        return new_note
 
 
 
