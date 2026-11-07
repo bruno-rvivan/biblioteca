@@ -73,19 +73,21 @@ def get_book_id_by_title(title: str):
 
 
 
-def get_book_by_id(book_id: str):
+def get_book_by_id(book_id: uuid.UUID | str | None):
     if book_id is None:
         return None
-    book_id = uuid.UUID(book_id)
+    if isinstance(book_id, str):
+        book_id = uuid.UUID(book_id)
     with Session(engine) as session:
         livro = session.execute(select(Books).where(Books.id == book_id)).scalar_one_or_none()
         return livro
 
 
-def update_book(book_id: str, updated_data: dict):
+def update_book(book_id: uuid.UUID | str | None, updated_data: dict):
     if book_id is None:
         return None
-    book_id = uuid.UUID(book_id)
+    if isinstance(book_id, str):
+        book_id = uuid.UUID(book_id)
     with Session(engine) as session:
         livro = session.execute(select(Books).where(Books.id == book_id)).scalar_one_or_none()
         if livro:
@@ -144,6 +146,55 @@ def get_reading_notes_by_book_id(book_id: str):
         return notas
 
 
+
+def search_reading_notes(
+    search_term: str | None = None,
+    book_id: str | None = None,
+    note_id: str | None = None,
+):
+    with Session(engine) as session:
+        stmt = (
+            select(ReadingNotes, Books.title)
+            .join(Books, ReadingNotes.book_id == Books.id)
+        )
+
+        if note_id:
+            if search_term or book_id:
+                raise ValueError(
+                    "note_id não pode ser combinado com outros filtros."
+                )
+
+            stmt = stmt.where(ReadingNotes.id == uuid.UUID(note_id))
+
+        if book_id:
+            stmt = stmt.where(
+                ReadingNotes.book_id == uuid.UUID(book_id)
+            )
+
+        if search_term:
+            stmt = stmt.where(
+                ReadingNotes.content.ilike(f"%{search_term}%")
+            )
+
+        stmt = stmt.limit(20)
+
+        results = session.execute(stmt).all()
+
+        return [
+            {
+                "id": str(note.id),
+                "book_id": str(note.book_id),
+                "book_title": book_title,
+                "chapter": note.chapter,
+                "page": note.page,
+                "note_type": note.note_type,
+                "content": note.content,
+            }
+            for note, book_title in results
+        ]
+
+
+
 def delete_reading_note_by_id(note_id: str):
     note_id = uuid.UUID(note_id)
     with Session(engine) as session:
@@ -153,9 +204,6 @@ def delete_reading_note_by_id(note_id: str):
             session.commit()
             return True
         return False
-
-
-
 
 
 
