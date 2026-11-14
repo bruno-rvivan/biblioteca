@@ -5,6 +5,8 @@ from agno.db.sqlite import SqliteDb
 
 from app.services.note_tools import search_reading_notes
 
+from uuid import uuid4
+
 from pathlib import Path
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
@@ -31,9 +33,72 @@ guideon = Agent(
 )
 
 
-while True:
-    user_input = input("Digite sua pergunta (ou 'sair' para encerrar): ")
-    if user_input.lower() == "sair":
-        break
+def run_agent(query: str, session_id: str | None = None):
+    if session_id is None:
+        session_id = str(uuid4())
 
-    guideon.print_response(user_input, stream=True)
+    response = guideon.run(
+        query,
+        session_id=session_id,
+    )
+
+    return {
+        "content": response.content,
+        "session_id": response.session_id,
+    }
+
+
+
+def list_sessions(limit: int = 20, page: int = 1):
+    sessions = db.get_sessions(
+        limit=limit,
+        page=page,
+        sort_by="updated_at",
+        sort_order="desc",
+        include_runs=False,
+    )
+
+    return [
+        {
+            "session_id": session.session_id,
+            "session_name": (session.session_data or {}).get(
+                "session_name"
+            ) or "Nova conversa",
+            "created_at": session.created_at,
+            "updated_at": session.updated_at,
+        }
+        for session in sessions
+    ]
+
+
+
+def get_session_history(session_id: str):
+    session = db.get_session(
+        session_id=session_id,
+        runs_limit=100,
+    )
+
+    if session is None:
+        return None
+
+    messages = session.get_chat_history()
+
+    return {
+        "session_id": session.session_id,
+        "session_name": (session.session_data or {}).get(
+            "session_name"
+        ) or "Nova conversa",
+        "created_at": session.created_at,
+        "updated_at": session.updated_at,
+        "messages": [
+            {
+                "role": message.role,
+                "content": message.content,
+            }
+            for message in messages
+            if message.role in ("user", "assistant")
+            and message.content is not None
+        ],
+    }
+
+
