@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Float, ForeignKey, UniqueConstraint, CheckConstraint, Uuid
+from sqlalchemy import String, Integer, CheckConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 import uuid

@@ -2,9 +2,6 @@ from agno.tools import tool
 
 from app.db.session import search_reading_notes as search_notes
 
-from agno.tools import tool
-
-
 
 @tool
 def search_reading_notes(

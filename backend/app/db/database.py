@@ -1,7 +1,7 @@
-from pathlib import Path
-from sqlalchemy import create_engine
-from app.db.base import Base
 import os
+from pathlib import Path
+
+from sqlalchemy import create_engine
 
 
 DB_PATH = Path(__file__).resolve().parent / "books.db"

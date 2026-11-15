@@ -17,7 +17,16 @@ method_prompt = (PROMPTS_DIR / "method.md").read_text(encoding="utf-8")
 
 description = (PROMPTS_DIR / "description.md").read_text(encoding="utf-8")
 
-db = SqliteDb(db_url="sqlite:////home/bruno/Documentos/Projects/biblioteca/backend/data/agent.db")
+BASE_DIR = Path(__file__).resolve().parents[2]
+
+DATA_DIR = BASE_DIR / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+AGENT_DB_PATH = DATA_DIR / "agent.db"
+
+
+db = SqliteDb(db_url=f"sqlite:///{AGENT_DB_PATH}")
+
 
 guideon = Agent(
     model=Groq(id="openai/gpt-oss-120b"),
