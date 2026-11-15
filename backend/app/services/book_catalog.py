@@ -1,48 +1,42 @@
 import requests
 
-
-url = "https://openlibrary.org/search.json?q=the+lord+of+the+rings"
-headers = {
-    "User-Agent": "biblioteca/1.0 (brvvv6@gmail.com)"
-}
+BASE_URL = "https://openlibrary.org"
+HEADERS = {"User-Agent": "Athanor/1.0"}
 
 
 def get_book_isbn(title: str):
-    url = f"https://openlibrary.org/search.json?q={title}"
-    headers = {
-        "User-Agent": "biblioteca/1.0 (brvvv6@gmail.com)"
-    }
-    response = requests.get(url, headers=headers)
-    livro = response.json()
-    if livro["docs"]:
-        obj = livro["docs"][0]
-        ia = obj['ia']
-        for prefixo in ia:
-            if prefixo.startswith("isbn_"):
-                isbn = prefixo.removeprefix("isbn_")
-                return isbn
-
+    response = requests.get(
+        f"{BASE_URL}/search.json",
+        params={"q": title, "limit": 1},
+        headers=HEADERS,
+        timeout=10,
+    )
+    response.raise_for_status()
+    docs = response.json().get("docs", [])
+    if not docs:
+        return None
+    isbns = docs[0].get("isbn", [])
+    return isbns[0] if isbns else None
 
 
 def get_book_info_by_isbn(isbn: str):
-    url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
-    headers = {
-        "User-Agent": "biblioteca/1.0 (brvvv6@gmail.com)"
-    }
-    response = requests.get(url, headers=headers)
-    livro = response.json()
-    if livro:
-        return list(livro.values())[0]
+    response = requests.get(
+        f"{BASE_URL}/api/books",
+        params={"bibkeys": f"ISBN:{isbn}", "format": "json", "jscmd": "data"},
+        headers=HEADERS,
+        timeout=10,
+    )
+    response.raise_for_status()
+    data = response.json()
+    return next(iter(data.values()), None)
 
 
-
-def get_book_info_by_title(title: str):
-    url = f"https://openlibrary.org/search.json?q={title}"
-    headers = {
-        "User-Agent": "biblioteca/1.0 (brvvv6@gmail.com)"
-    }
-    response = requests.get(url, headers=headers)
-    livro = response.json()
-    if livro["docs"]:
-        return livro["docs"]
-
+def get_book_info_by_title(title: str, limit: int = 10):
+    response = requests.get(
+        f"{BASE_URL}/search.json",
+        params={"q": title, "limit": limit},
+        headers=HEADERS,
+        timeout=10,
+    )
+    response.raise_for_status()
+    return response.json().get("docs", [])

@@ -90,13 +90,42 @@ def update_book(book_id: uuid.UUID | str | None, updated_data: dict):
         book_id = uuid.UUID(book_id)
     with Session(engine) as session:
         livro = session.execute(select(Books).where(Books.id == book_id)).scalar_one_or_none()
-        if livro:
-            for key, value in updated_data.items():
-                setattr(livro, key, value)
-            livro.updated_at = func.now()
-            session.commit()
-            return livro
-        return None
+        if livro is None:
+            return None
+
+        for key, value in updated_data.items():
+            setattr(livro, key, value)
+        livro.updated_at = datetime.now(timezone.utc).isoformat()
+        session.commit()
+        session.refresh(livro)
+        return livro
+
+
+def delete_book_by_id(book_id: uuid.UUID | str | None):
+    if book_id is None:
+        return False
+    if isinstance(book_id, str):
+        book_id = uuid.UUID(book_id)
+
+    with Session(engine) as session:
+        livro = session.execute(
+            select(Books).where(Books.id == book_id)
+        ).scalar_one_or_none()
+        if livro is None:
+            return False
+
+        # Não deixa notas órfãs: o usuário precisa removê-las antes do livro.
+        has_notes = session.execute(
+            select(ReadingNotes.id)
+            .where(ReadingNotes.book_id == book_id)
+            .limit(1)
+        ).first()
+        if has_notes:
+            raise ValueError("Não é possível excluir um livro que possui notas de leitura.")
+
+        session.delete(livro)
+        session.commit()
+        return True
 
 
 #----------------------------------------------------------------NOTAS------------------------------------------------------------
@@ -130,16 +159,18 @@ def get_all_reading_notes():
 
 
 
-def get_reading_note_by_id(note_id: str):
-    note_id = uuid.UUID(note_id)
+def get_reading_note_by_id(note_id: uuid.UUID | str):
+    if isinstance(note_id, str):
+        note_id = uuid.UUID(note_id)
     with Session(engine) as session:
         nota = session.execute(select(ReadingNotes).where(ReadingNotes.id == note_id)).scalar_one_or_none()
         return nota
 
 
 
-def get_reading_notes_by_book_id(book_id: str):
-    book_id = uuid.UUID(book_id)
+def get_reading_notes_by_book_id(book_id: uuid.UUID | str):
+    if isinstance(book_id, str):
+        book_id = uuid.UUID(book_id)
     with Session(engine) as session:
         notas = session.execute(select(ReadingNotes).where(ReadingNotes.book_id == book_id)).fetchall()
         notas = [note[0] for note in notas]
@@ -195,8 +226,28 @@ def search_reading_notes(
 
 
 
-def delete_reading_note_by_id(note_id: str):
-    note_id = uuid.UUID(note_id)
+def update_reading_note(note_id: uuid.UUID | str, updated_data: dict):
+    if isinstance(note_id, str):
+        note_id = uuid.UUID(note_id)
+
+    with Session(engine) as session:
+        note = session.execute(
+            select(ReadingNotes).where(ReadingNotes.id == note_id)
+        ).scalar_one_or_none()
+        if note is None:
+            return None
+
+        for key, value in updated_data.items():
+            setattr(note, key, value)
+        note.updated_at = datetime.now(timezone.utc).isoformat()
+        session.commit()
+        session.refresh(note)
+        return note
+
+
+def delete_reading_note_by_id(note_id: uuid.UUID | str):
+    if isinstance(note_id, str):
+        note_id = uuid.UUID(note_id)
     with Session(engine) as session:
         note = session.execute(select(ReadingNotes).where(ReadingNotes.id == note_id)).scalar_one_or_none()
         if note:
