@@ -23,7 +23,7 @@ O projeto também tem como objetivo explorar, na prática, o desenvolvimento de 
   - Citações;
   - Interpretações.
 
-### Guideon — Companheiro literário
+### Guideon
 
 O Guideon é um agente de inteligência artificial desenvolvido para conversar sobre as leituras e anotações registradas na biblioteca.
 
